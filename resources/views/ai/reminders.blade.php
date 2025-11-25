@@ -13,14 +13,14 @@
     <div class="space-y-4">
         @foreach($reminders as $reminder)
         <div class="bg-white rounded-2xl shadow-sm p-6 border-l-4 
-            {{ $reminder['color'] === 'red' ? 'border-red-500' : '' }}
-            {{ $reminder['color'] === 'orange' ? 'border-orange-500' : '' }}
-            {{ $reminder['color'] === 'blue' ? 'border-blue-500' : '' }}
-            {{ $reminder['color'] === 'purple' ? 'border-purple-500' : '' }}
-            {{ $reminder['color'] === 'gray' ? 'border-gray-500' : '' }}">
+            {{ ($reminder['color'] ?? '') === 'red' ? 'border-red-500' : '' }}
+        {{ ($reminder['color'] ?? '') === 'orange' ? 'border-orange-500' : '' }}
+        {{ ($reminder['color'] ?? '') === 'blue' ? 'border-blue-500' : '' }}
+        {{ ($reminder['color'] ?? '') === 'purple' ? 'border-purple-500' : '' }}
+        {{ ($reminder['color'] ?? '') === 'gray' ? 'border-gray-500' : '' }}">
             
             <div class="flex items-start gap-4">
-                <span class="text-4xl">{{ $reminder['icon'] }}</span>
+                <span class="text-4xl">{{ $reminder['icon'] ?? '' }}</span>
                 <div class="flex-1">
                     <div class="flex items-center gap-3 mb-2">
                         <h3 class="font-bold text-lg">{{ $reminder['title'] }}</h3>

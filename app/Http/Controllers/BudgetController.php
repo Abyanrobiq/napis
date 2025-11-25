@@ -59,4 +59,17 @@ class BudgetController extends Controller
         $budget->delete();
         return redirect()->route('budgets.index')->with('success', 'Budget berhasil dihapus');
     }
+    public function applyAI(Request $request)
+{
+    Budget::create([
+        'category_id' => $request->category_id,
+        'amount' => $request->amount,
+        'period_start' => now()->startOfMonth(),
+        'period_end' => now()->endOfMonth(),
+    ]);
+
+    return redirect()->route('ai.budget-recommendation')
+        ->with('success', 'AI Recommended budget applied successfully!');
+}
+
 }

@@ -27,6 +27,7 @@ class TransactionController extends Controller
 
     public function store(Request $request)
     {
+        
         $request->validate([
             'category_id' => 'required|exists:categories,id',
             'budget_id' => 'nullable|exists:budgets,id',
@@ -100,4 +101,5 @@ class TransactionController extends Controller
         $transaction->delete();
         return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil dihapus');
     }
+    
 }

@@ -12,6 +12,43 @@
         }
     </style>
 </head>
+@if(session('success'))
+<div id="toast"
+     class="fixed top-5 right-5 bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg z-50 transition-all duration-500">
+    {{ session('success') }}
+</div>
+
+<script>
+    setTimeout(() => {
+        const toast = document.getElementById('toast');
+        if (toast) {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(50px)';
+            setTimeout(() => toast.remove(), 600);
+        }
+    }, 3000); // hide after 3 sec
+</script>
+@endif
+
+{{-- Overspend Popup Alert --}}
+@if(session('overspend'))
+<div id="overspendToast"
+     class="fixed top-5 right-5 bg-red-600 text-white px-5 py-3 rounded-lg shadow-xl z-50 transition-all duration-500 font-semibold">
+    🚨 {{ session('overspend') }}
+</div>
+
+<script>
+    setTimeout(() => {
+        const toast = document.getElementById('overspendToast');
+        if (toast) {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(50px)';
+            setTimeout(() => toast.remove(), 600);
+        }
+    }, 3500);
+</script>
+@endif
+
 <body class="bg-gray-100">
     <div class="flex h-screen">
         <!-- Sidebar -->

@@ -49,4 +49,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/ai/analysis', [App\Http\Controllers\AIController::class, 'analyzeSpendingPattern'])->name('ai.analysis');
     Route::get('/ai/budget-recommendation', [App\Http\Controllers\AIController::class, 'recommendBudget'])->name('ai.budget-recommendation');
     Route::get('/ai/reminders', [App\Http\Controllers\AIController::class, 'smartReminders'])->name('ai.reminders');
+    Route::post('/ai/apply-budget', [BudgetController::class, 'applyAI'])->name('ai.applyBudget');
+
 });

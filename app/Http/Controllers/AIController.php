@@ -11,21 +11,20 @@ use Illuminate\Support\Facades\DB;
 
 class AIController extends Controller
 {
-    // 1. Kategorisasi Transaksi Cerdas
+    // 1. Smart Category Suggestion
     public function suggestCategory(Request $request)
     {
         $description = strtolower($request->description);
         
-        // Keyword mapping untuk kategori
         $categoryKeywords = [
-            'Makanan & Minuman' => ['makan', 'minum', 'restoran', 'cafe', 'kopi', 'nasi', 'ayam', 'burger', 'pizza', 'bakso', 'soto', 'warteg', 'food', 'lunch', 'dinner', 'breakfast'],
-            'Transportasi' => ['bensin', 'grab', 'gojek', 'taxi', 'bus', 'kereta', 'parkir', 'tol', 'ojek', 'uber', 'transport', 'fuel'],
-            'Belanja' => ['belanja', 'beli', 'shopping', 'toko', 'mall', 'supermarket', 'indomaret', 'alfamart', 'tokopedia', 'shopee', 'lazada'],
-            'Hiburan' => ['nonton', 'film', 'bioskop', 'game', 'netflix', 'spotify', 'youtube', 'concert', 'hiburan', 'main'],
-            'Tagihan' => ['listrik', 'air', 'internet', 'wifi', 'pulsa', 'token', 'pln', 'pdam', 'telkom', 'indihome', 'bill'],
-            'Kesehatan' => ['dokter', 'rumah sakit', 'obat', 'apotek', 'vitamin', 'medical', 'hospital', 'clinic', 'checkup'],
-            'Pendidikan' => ['sekolah', 'kuliah', 'kursus', 'buku', 'les', 'training', 'seminar', 'education', 'course'],
-            'Gaji' => ['gaji', 'salary', 'income', 'bonus', 'thr', 'komisi', 'honorarium'],
+            'Makanan & Minuman' => ['makan','minum','restoran','cafe','kopi','nasi','ayam','burger','pizza','bakso','soto','warteg','food','lunch','dinner','breakfast'],
+            'Transportasi' => ['bensin','grab','gojek','taxi','bus','kereta','parkir','tol','ojek','uber','transport','fuel'],
+            'Belanja' => ['belanja','beli','shopping','toko','mall','supermarket','indomaret','alfamart','tokopedia','shopee','lazada'],
+            'Hiburan' => ['nonton','film','bioskop','game','netflix','spotify','youtube','concert','hiburan','main'],
+            'Tagihan' => ['listrik','air','internet','wifi','pulsa','token','pln','pdam','telkom','indihome','bill'],
+            'Kesehatan' => ['dokter','rumah sakit','obat','apotek','vitamin','medical','hospital','clinic','checkup'],
+            'Pendidikan' => ['sekolah','kuliah','kursus','buku','les','training','seminar','education','course'],
+            'Gaji' => ['gaji','salary','income','bonus','thr','komisi','honorarium'],
         ];
 
         $suggestedCategory = null;
@@ -53,12 +52,11 @@ class AIController extends Controller
         ]);
     }
 
-    // 2. Analisis Pola Pengeluaran
+    // 2. Pattern Analysis
     public function analyzeSpendingPattern()
     {
         $lastMonth = now()->subMonth();
-        
-        // Analisis per kategori
+
         $categoryAnalysis = Transaction::select('category_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
             ->where('type', 'expense')
             ->where('transaction_date', '>=', $lastMonth)
@@ -66,7 +64,6 @@ class AIController extends Controller
             ->groupBy('category_id')
             ->get();
 
-        // Deteksi anomali (pengeluaran tidak biasa)
         $anomalies = [];
         foreach ($categoryAnalysis as $analysis) {
             $avgAmount = $analysis->total / $analysis->count;
@@ -86,7 +83,6 @@ class AIController extends Controller
             }
         }
 
-        // Tren pengeluaran (naik/turun)
         $thisMonthExpense = Transaction::where('type', 'expense')
             ->whereMonth('transaction_date', now()->month)
             ->sum('amount');
@@ -110,13 +106,17 @@ class AIController extends Controller
         ));
     }
 
-    // 3. Rekomendasi Anggaran Adaptif
+    // 3. Budget Recommendation (with overspending + 3 lifestyle modes)
     public function recommendBudget()
     {
         $lastThreeMonths = now()->subMonths(3);
-        
-        // Hitung rata-rata pengeluaran per kategori
-        $categoryAverages = Transaction::select('category_id', DB::raw('AVG(amount) as avg_amount'), DB::raw('SUM(amount) as total_amount'))
+
+        $categoryData = Transaction::select(
+                'category_id',
+                DB::raw('SUM(amount) as total_amount'),
+                DB::raw('MIN(transaction_date) as first_date'),
+                DB::raw('MAX(transaction_date) as last_date')
+            )
             ->where('type', 'expense')
             ->where('transaction_date', '>=', $lastThreeMonths)
             ->with('category')
@@ -124,35 +124,98 @@ class AIController extends Controller
             ->get();
 
         $recommendations = [];
-        foreach ($categoryAverages as $avg) {
-            // Cek apakah sudah ada budget
-            $existingBudget = Budget::where('category_id', $avg->category_id)
+
+        foreach ($categoryData as $data) {
+            $overspending = false;
+            $overspendAmount = 0;
+            $recommendedOverspendBudget = null;
+
+
+            // hitung bulan real
+            $months = \Carbon\Carbon::parse($data->first_date)
+                ->startOfMonth()
+                ->diffInMonths(
+                    \Carbon\Carbon::parse($data->last_date)->endOfMonth()
+                ) + 1;
+
+            $months = max(1, $months);
+
+            $averageSpending = $data->total_amount / $months;
+
+            $existingBudget = Budget::where('category_id', $data->category_id)
                 ->whereDate('period_end', '>=', now())
                 ->first();
 
-            $recommendedAmount = $avg->total_amount / 3 * 1.1; // +10% buffer
+            $currentMonthSpending = Transaction::where('category_id', $data->category_id)
+                ->where('type', 'expense')
+                ->whereMonth('transaction_date', now()->month)
+                ->sum('amount');
+            
+            if ($overspending) {
+                 return redirect()->route('ai.budget-recommendation')
+                 ->with('overspend', 'Overspending detected! Consider adjusting your budget.');
+}
+
+
+            $overspending = false;
+            $overspendAmount = 0;
+            $recommendedOverspendBudget = null;
+
+            // Hanya tampilkan overspend jika budget-nya sudah lebih besar dari average
+            if ($existingBudget && $existingBudget->amount >= $averageSpending && $currentMonthSpending > $existingBudget->amount) {
+                $overspending = true;
+                $overspendAmount = $currentMonthSpending - $existingBudget->amount;
+
+                // rekomendasi budget baru jika overspending
+                $recommendedOverspendBudget = $averageSpending * (
+                    $overspendAmount > $existingBudget->amount * 0.20 
+                        ? 1.20  // overspend parah
+                        : 1.10  // overspend ringan
+                );
+            }
+
+            // 3 MODE GAYA HIDUP
+            $superHemat = $averageSpending * 0.80;
+            $hemat = $averageSpending * 1.00;
+            $nyantai = $averageSpending * 1.20;
 
             $recommendations[] = [
-                'category' => $avg->category,
-                'current_budget' => $existingBudget ? $existingBudget->amount : 0,
-                'recommended_budget' => $recommendedAmount,
-                'average_spending' => $avg->total_amount / 3,
-                'has_budget' => $existingBudget ? true : false,
+                'category' => $data->category,
+                'current_budget' => $existingBudget->amount ?? 0,
+                'average_spending' => $averageSpending,
+
+                // 🔥 STATUS dikembalikan ke UI lama
                 'status' => $existingBudget 
-                    ? ($existingBudget->amount < $recommendedAmount ? 'increase' : 'sufficient')
-                    : 'create'
+                    ? ($existingBudget->amount < $averageSpending ? 'increase' : 'sufficient')
+                    : 'create',
+
+                    'has_budget' => $existingBudget ? true : false,
+
+                    'recommended_budget' => $averageSpending * 1.10, // buffer 10%
+
+
+
+                // 3 gaya hidup
+                'super_hemat' => $superHemat,
+                'hemat' => $hemat,
+                'nyantai' => $nyantai,
+
+                // overspending
+                'overspending' => $overspending,
+                'overspend_amount' => $overspendAmount,
+                'recommended_if_overspend' => $recommendedOverspendBudget,
             ];
         }
 
         return view('ai.budget-recommendation', compact('recommendations'));
     }
 
-    // 4. Pengingat Cerdas
+    // 4. Smart Reminders
     public function smartReminders()
     {
         $reminders = [];
 
-        // 1. Budget hampir habis
+        // budget alerts
         $budgets = Budget::with('category')
             ->whereDate('period_end', '>=', now())
             ->get();
@@ -164,81 +227,42 @@ class AIController extends Controller
                     'type' => 'budget_warning',
                     'priority' => 'medium',
                     'title' => 'Budget Almost Exceeded',
-                    'message' => "Your {$budget->category->name} budget is {$percentage}% used. Remaining: Rp " . number_format($budget->remaining(), 0, ',', '.'),
-                    'icon' => '⚠️',
-                    'color' => 'orange'
+                    'message' => "Your {$budget->category->name} budget is {$percentage}% used."
                 ];
             } elseif ($percentage >= 100) {
                 $reminders[] = [
                     'type' => 'budget_exceeded',
                     'priority' => 'high',
                     'title' => 'Budget Exceeded!',
-                    'message' => "Your {$budget->category->name} budget has been exceeded by Rp " . number_format(abs($budget->remaining()), 0, ',', '.'),
-                    'icon' => '🚨',
-                    'color' => 'red'
+                    'message' => "You exceeded the {$budget->category->name} budget!"
                 ];
             }
         }
+        // 2. Overspending terlalu besar (lebih dari 30% total budget)
+$highOverspend = Transaction::where('type', 'expense')
+    ->whereMonth('transaction_date', now()->month)
+    ->sum('amount');
 
-        // 2. Savings goal deadline mendekat
-        $savings = Saving::where('status', 'active')
-            ->whereNotNull('target_date')
-            ->get();
+$activeBudgetsTotal = Budget::whereDate('period_end', '>=', now())->sum('amount');
 
-        foreach ($savings as $saving) {
-            $daysLeft = now()->diffInDays($saving->target_date, false);
-            if ($daysLeft > 0 && $daysLeft <= 30 && $saving->current_amount < $saving->target_amount) {
-                $reminders[] = [
-                    'type' => 'saving_deadline',
-                    'priority' => 'medium',
-                    'title' => 'Savings Goal Deadline Approaching',
-                    'message' => "{$saving->name} deadline in {$daysLeft} days. You need Rp " . number_format($saving->remainingAmount(), 0, ',', '.') . " more.",
-                    'icon' => '⏰',
-                    'color' => 'blue'
-                ];
-            }
-        }
+if ($highOverspend > $activeBudgetsTotal * 1.30) {
+    $reminders[] = [
+        'type' => 'overspend_alert',
+        'priority' => 'high',
+        'title' => 'Overspending Too Much!',
+        'message' => 'Your spending has exceeded your budgets by more than 30%. Consider adjusting your budget with AI recommendations.',
+        'cta' => route('ai.budget-recommendation'),
+        'icon' => '🚨',
+        'color' => 'red'
+    ];
+}
 
-        // 3. Pengeluaran tidak biasa
-        $lastWeekAvg = Transaction::where('type', 'expense')
-            ->where('transaction_date', '>=', now()->subWeeks(4))
-            ->where('transaction_date', '<', now()->subWeek())
-            ->avg('amount');
-
-        $thisWeekTotal = Transaction::where('type', 'expense')
-            ->where('transaction_date', '>=', now()->startOfWeek())
-            ->sum('amount');
-
-        if ($thisWeekTotal > $lastWeekAvg * 7 * 1.5) {
-            $reminders[] = [
-                'type' => 'unusual_spending',
-                'priority' => 'high',
-                'title' => 'Unusual Spending Detected',
-                'message' => "Your spending this week is 50% higher than usual. Total: Rp " . number_format($thisWeekTotal, 0, ',', '.'),
-                'icon' => '📊',
-                'color' => 'purple'
-            ];
-        }
-
-        // 4. Belum ada transaksi hari ini
-        $todayTransactions = Transaction::whereDate('transaction_date', now())->count();
-        if ($todayTransactions === 0 && now()->hour >= 18) {
-            $reminders[] = [
-                'type' => 'no_transaction',
-                'priority' => 'low',
-                'title' => 'No Transactions Today',
-                'message' => "Don't forget to record your daily transactions!",
-                'icon' => '📝',
-                'color' => 'gray'
-            ];
-        }
-
-        // Sort by priority
-        usort($reminders, function ($a, $b) {
-            $priority = ['high' => 3, 'medium' => 2, 'low' => 1];
-            return $priority[$b['priority']] - $priority[$a['priority']];
-        });
-
+    // sort by priority
+usort($reminders, function ($a, $b) {
+    $priority = ['high' => 3, 'medium' => 2, 'low' => 1];
+    return $priority[$b['priority']] - $priority[$a['priority']];
+}); 
         return view('ai.reminders', compact('reminders'));
     }
+    
 }
