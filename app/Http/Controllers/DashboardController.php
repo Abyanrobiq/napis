@@ -2,50 +2,74 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Budget;
-use App\Models\Category;
-use App\Models\Saving;
-use App\Models\Setting;
-use App\Models\Transaction;
 use Illuminate\Http\Request;
+use App\Models\Setting;
+use App\Models\Budget;
+use App\Models\Transaction;
+use App\Models\Saving;
+use App\Http\Controllers\AiAssistantController;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $balance = Setting::get('initial_balance', 0);
-        $totalIncome = Transaction::where('type', 'income')->sum('amount');
-        $totalExpense = Transaction::where('type', 'expense')->sum('amount');
+        /* ============================
+         * 1) Ambil data budget
+         * ============================ */
+        $budgets = Budget::with('category')->get();
+
+        /* ============================
+         * 2) Deteksi overspend kategori
+         * ============================ */
+        $overspends = [];
+
+        foreach ($budgets as $b) {
+            if ($b->spent > $b->amount) {
+                $overspends[] = [
+                    'category_id' => $b->category_id,   // ← WAJIB DITAMBAH
+                    'category'    => $b->category->name,
+                    'spent'       => $b->spent,
+                    'budget'      => $b->amount,
+                    'overspent'   => $b->spent - $b->amount
+                ];
+            }
+        }
+
+        if (!empty($overspends)) {
+            session()->flash('overspend', $overspends[0]);
+        }
+
+        /* ============================
+         * 3) Popup AI otomatis
+         * ============================ */
+        try {
+            $ayuPopup = app(AiAssistantController::class)->generateAyuPopup();
+            session()->flash('ayu_popup', $ayuPopup);
+        } catch (\Exception $e) {
+            session()->flash('ayu_popup', "Ayu lagi error, tapi kamu tetep boros 😭💸");
+        }
+
+        /* ============================
+         * 4) Hitung keuangan
+         * ============================ */
+        $balance        = Setting::get('initial_balance', 0);
+        $totalIncome    = Transaction::where('type', 'income')->sum('amount');
+        $totalExpense   = Transaction::where('type', 'expense')->sum('amount');
         $currentBalance = $balance + $totalIncome - $totalExpense;
 
-        $budgets = Budget::with('category')
-            ->whereDate('period_start', '<=', now())
-            ->whereDate('period_end', '>=', now())
-            ->get();
+        /* ============================
+         * 5) Data dashboard lainnya
+         * ============================ */
+        $recentTransactions = Transaction::latest()->take(5)->get();
+        $savings = Saving::all();
+        $totalSavings = $savings->sum('current_amount') ?? 0;
 
-        $recentTransactions = Transaction::with('category')
-            ->orderBy('transaction_date', 'desc')
-            ->limit(10)
-            ->get();
-
-        $savings = Saving::where('status', 'active')
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
-
-        $totalSavings = Saving::sum('current_amount');
-
-        return view('dashboard', compact('currentBalance', 'budgets', 'recentTransactions', 'savings', 'totalSavings'));
-    }
-
-    public function setInitialBalance(Request $request)
-    {
-        $request->validate([
-            'balance' => 'required|numeric|min:0'
-        ]);
-
-        Setting::set('initial_balance', $request->balance);
-
-        return redirect()->route('dashboard')->with('success', 'Saldo awal berhasil diatur');
+        return view('dashboard', compact(
+            'currentBalance',
+            'recentTransactions',
+            'budgets',
+            'savings',
+            'totalSavings'
+        ));
     }
 }
