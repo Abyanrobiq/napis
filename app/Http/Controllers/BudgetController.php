@@ -59,4 +59,41 @@ class BudgetController extends Controller
         $budget->delete();
         return redirect()->route('budgets.index')->with('success', 'Budget berhasil dihapus');
     }
+
+    /**
+     * APPLY AI RECOMMENDATION
+     */
+    public function applyAI(Request $request)
+    {
+        $request->validate([
+            'category_id' => 'required|exists:categories,id',
+            'amount' => 'required|numeric|min:0',
+        ]);
+
+        // cek apakah kategori sudah punya budget bulan ini
+        $existing = Budget::where('category_id', $request->category_id)
+            ->whereDate('period_start', now()->startOfMonth())
+            ->whereDate('period_end', now()->endOfMonth())
+            ->first();
+
+        if ($existing) {
+            // update
+            $existing->update([
+                'amount' => $request->amount,
+            ]);
+        } else {
+            // create
+            Budget::create([
+                'category_id' => $request->category_id,
+                'amount' => $request->amount,
+                'period_start' => now()->startOfMonth(),
+                'period_end' => now()->endOfMonth(),
+                'spent' => 0,
+            ]);
+        }
+
+        return redirect()
+            ->route('budgets.index')
+            ->with('success', 'Budget berhasil diperbarui berdasarkan rekomendasi AI!');
+    }
 }

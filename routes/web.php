@@ -8,6 +8,10 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SavingController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AiAssistantController;
+
+Route::post('/ai/chat', [AiAssistantController::class, 'chat'])->name('ai.chat');
+Route::post('/ai/apply-recommendation', [AiAssistantController::class, 'applyRecommendation'])->name('ai.applyRecommendation');
 
 // Landing page
 Route::get('/', function () {
@@ -49,4 +53,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/ai/analysis', [App\Http\Controllers\AIController::class, 'analyzeSpendingPattern'])->name('ai.analysis');
     Route::get('/ai/budget-recommendation', [App\Http\Controllers\AIController::class, 'recommendBudget'])->name('ai.budget-recommendation');
     Route::get('/ai/reminders', [App\Http\Controllers\AIController::class, 'smartReminders'])->name('ai.reminders');
+    Route::post('/ai/apply-budget', [BudgetController::class, 'applyAI'])->name('ai.applyBudget');
+    Route::get('/ai/auto-alert', [AiAssistantController::class, 'autoAlert'])->name('ai.autoAlert');
+   
 });

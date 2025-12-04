@@ -167,4 +167,41 @@
     </div>
     @endif
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    fetch("/ai/auto-alert")
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === "WARNING") {
+                // Gabungkan alert jadi satu bubble
+                let message = data.alerts.join("\n\n");
+
+                // Trigger popup Ayu
+                openAyuPopup(message);
+            }
+        })
+        .catch(err => console.error("Ayu alert error:", err));
+
+});
+
+function openAyuPopup(text) {
+    // Jika chat bubble kamu pakai sistem append:
+    const chatBody = document.getElementById("chat-body");
+
+    chatBody.innerHTML += `
+        <div class="ai-bubble">${text}</div>
+    `;
+
+    chatBody.scrollTop = chatBody.scrollHeight;
+}
+</script>
+@if(session('ayu_overspend'))
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    ayuAutoMessage("⚠️ Hei! Kamu overspend di kategori **{{ session('ayu_overspend') }}**! Ayu sedih banget nih 😭 Yuk coba dikurangin biar keuangan kamu makin sehat ❤️‍🔥");
+});
+</script>
+@endif
+
 @endsection

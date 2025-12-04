@@ -27,6 +27,7 @@ class TransactionController extends Controller
 
     public function store(Request $request)
     {
+
         $request->validate([
             'category_id' => 'required|exists:categories,id',
             'budget_id' => 'nullable|exists:budgets,id',
@@ -45,7 +46,32 @@ class TransactionController extends Controller
             $budget->save();
         }
 
-        return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil ditambahkan');
+        
+        // === CEK OVERSPENDING ===
+if ($request->type === 'expense') {
+    $budget = Budget::where('category_id', $request->category_id)
+        ->whereDate('period_end', '>=', now())
+        ->first();
+
+    if ($budget) {
+        $currentSpent = Transaction::where('category_id', $request->category_id)
+            ->where('type', 'expense')
+            ->whereMonth('transaction_date', now()->month)
+            ->sum('amount');
+
+        if ($currentSpent > $budget->amount) {
+            $overspendAmount = $currentSpent - $budget->amount;
+
+            session()->flash('overspend', [
+                'category' => $budget->category->name,
+                'amount' => $overspendAmount
+            ]);
+        }
+    }
+}
+
+    return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil ditambahkan');
+
     }
 
     public function edit(Transaction $transaction)
@@ -100,4 +126,5 @@ class TransactionController extends Controller
         $transaction->delete();
         return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil dihapus');
     }
+    
 }
