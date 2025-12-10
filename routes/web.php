@@ -10,8 +10,7 @@ use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AiAssistantController;
 
-Route::post('/ai/chat', [AiAssistantController::class, 'chat'])->name('ai.chat');
-Route::post('/ai/apply-recommendation', [AiAssistantController::class, 'applyRecommendation'])->name('ai.applyRecommendation');
+
 
 // Landing page
 Route::get('/', function () {
@@ -35,6 +34,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/set-balance', [DashboardController::class, 'setInitialBalance'])->name('set.balance');
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+    // Profile routes
+    Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/edit', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');
+
     Route::resource('categories', CategoryController::class);
     Route::resource('budgets', BudgetController::class);
     Route::resource('transactions', TransactionController::class);
@@ -49,6 +54,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports/export', [App\Http\Controllers\ReportController::class, 'export'])->name('reports.export');
     
     // AI Features
+    Route::post('/ai/chat', [AiAssistantController::class, 'chat'])->name('ai.chat');
+    Route::post('/ai/new-session', [AiAssistantController::class, 'newSession'])->name('ai.newSession');
+    Route::post('/ai/apply-recommendation', [AiAssistantController::class, 'applyRecommendation'])->name('ai.applyRecommendation');
     Route::post('/ai/suggest-category', [App\Http\Controllers\AIController::class, 'suggestCategory'])->name('ai.suggest-category');
     Route::get('/ai/analysis', [App\Http\Controllers\AIController::class, 'analyzeSpendingPattern'])->name('ai.analysis');
     Route::get('/ai/budget-recommendation', [App\Http\Controllers\AIController::class, 'recommendBudget'])->name('ai.budget-recommendation');

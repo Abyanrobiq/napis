@@ -72,4 +72,15 @@ class DashboardController extends Controller
             'totalSavings'
         ));
     }
+
+    public function setInitialBalance(Request $request)
+    {
+        $request->validate([
+            'balance' => 'required|numeric|min:0'
+        ]);
+
+        Setting::set('initial_balance', $request->balance);
+
+        return redirect()->route('dashboard')->with('success', 'Initial balance has been set successfully!');
+    }
 }

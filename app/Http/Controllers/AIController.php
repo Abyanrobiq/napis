@@ -234,7 +234,7 @@ class AIController extends Controller
     {
         $categories = Category::all();
 
-        $lastThreeMonths = now()->subMonths(3);
+        $lastMonth = now()->subMonth();
 
         $categoryData = Transaction::select(
                 'category_id',
@@ -243,7 +243,7 @@ class AIController extends Controller
                 DB::raw('MAX(transaction_date) as last_date')
             )
             ->where('type', 'expense')
-            ->where('transaction_date', '>=', $lastThreeMonths)
+            ->where('transaction_date', '>=', $lastMonth)
             ->with('category')
             ->groupBy('category_id')
             ->get();
@@ -251,52 +251,92 @@ class AIController extends Controller
         $recommendations = [];
 
         foreach ($categoryData as $data) {
-            $overspending = false;
-            $overspendAmount = 0;
-            $recommendedOverspendBudget = null;
-
-            $months = Carbon::parse($data->first_date)
-                ->startOfMonth()
-                ->diffInMonths(Carbon::parse($data->last_date)->endOfMonth()) + 1;
-
-            $months = max(1, $months);
-            $averageSpending = $data->total_amount / $months;
-
+            // Calculate average spending from last month data
+            $averageSpending = $data->total_amount; // Since we're using 1 month data now
+            
+            // Get existing budget for this category
             $existingBudget = Budget::where('category_id', $data->category_id)
                 ->whereDate('period_end', '>=', now())
                 ->first();
 
+            // Get current month spending to check overspending
             $currentMonthSpending = Transaction::where('category_id', $data->category_id)
                 ->where('type', 'expense')
                 ->whereMonth('transaction_date', now()->month)
                 ->sum('amount');
 
-            if ($existingBudget && $existingBudget->amount >= $averageSpending && $currentMonthSpending > $existingBudget->amount) {
+            // Determine budget status and recommendations
+            $overspending = false;
+            $overspendAmount = 0;
+            
+            if ($existingBudget && $currentMonthSpending > $existingBudget->amount) {
                 $overspending = true;
                 $overspendAmount = $currentMonthSpending - $existingBudget->amount;
-
-                $recommendedOverspendBudget = $averageSpending * (
-                    $overspendAmount > $existingBudget->amount * 0.20 ? 1.20 : 1.10
-                );
             }
 
-            $superHemat = $averageSpending * 0.80;
-            $hemat = $averageSpending * 1.00;
-            $nyantai = $averageSpending * 1.20;
+            // Smart budget recommendations based on spending patterns
+            $superHemat = round($averageSpending * 0.75); // 25% reduction for aggressive saving
+            $hemat = round($averageSpending * 0.90);      // 10% reduction for moderate saving
+            $normal = round($averageSpending);            // Based on actual spending
+            $nyantai = round($averageSpending * 1.15);    // 15% buffer for flexibility
+
+            // Determine recommended budget based on current situation
+            $recommendedBudget = $normal;
+            $budgetStatus = 'create';
+            $budgetAdvice = '';
+
+            if ($existingBudget) {
+                $currentBudget = $existingBudget->amount;
+                
+                if ($overspending) {
+                    // If overspending, recommend higher budget or suggest spending reduction
+                    if ($overspendAmount > $currentBudget * 0.20) {
+                        // Significant overspending (>20%), suggest budget increase
+                        $recommendedBudget = $nyantai;
+                        $budgetStatus = 'increase_significant';
+                        $budgetAdvice = 'Overspending signifikan terdeteksi. Pertimbangkan untuk menaikkan budget atau kurangi pengeluaran.';
+                    } else {
+                        // Minor overspending, suggest slight increase
+                        $recommendedBudget = round($averageSpending * 1.05);
+                        $budgetStatus = 'increase_minor';
+                        $budgetAdvice = 'Sedikit overspending. Budget dinaikkan sedikit untuk fleksibilitas.';
+                    }
+                } elseif ($currentBudget > $averageSpending * 1.25) {
+                    // Budget too high compared to actual spending
+                    $recommendedBudget = $normal;
+                    $budgetStatus = 'decrease';
+                    $budgetAdvice = 'Budget saat ini terlalu tinggi. Bisa dikurangi sesuai pola spending aktual.';
+                } elseif ($currentBudget < $averageSpending * 0.90) {
+                    // Budget too low
+                    $recommendedBudget = $normal;
+                    $budgetStatus = 'increase';
+                    $budgetAdvice = 'Budget saat ini terlalu rendah. Disarankan dinaikkan sesuai pola spending.';
+                } else {
+                    // Budget is appropriate
+                    $recommendedBudget = $currentBudget;
+                    $budgetStatus = 'sufficient';
+                    $budgetAdvice = 'Budget saat ini sudah sesuai dengan pola spending Anda.';
+                }
+            } else {
+                $budgetAdvice = 'Belum ada budget untuk kategori ini. Disarankan membuat budget berdasarkan pola spending.';
+            }
 
             $recommendations[] = [
                 'category' => $data->category,
                 'current_budget' => $existingBudget->amount ?? 0,
                 'average_spending' => $averageSpending,
-                'status' => $existingBudget ? ($existingBudget->amount < $averageSpending ? 'increase' : 'sufficient') : 'create',
+                'current_month_spending' => $currentMonthSpending,
+                'status' => $budgetStatus,
                 'has_budget' => (bool) $existingBudget,
-                'recommended_budget' => $averageSpending * 1.10,
+                'recommended_budget' => $recommendedBudget,
                 'super_hemat' => $superHemat,
                 'hemat' => $hemat,
+                'normal' => $normal,
                 'nyantai' => $nyantai,
                 'overspending' => $overspending,
                 'overspend_amount' => $overspendAmount,
-                'recommended_if_overspend' => $recommendedOverspendBudget,
+                'advice' => $budgetAdvice,
+                'savings_potential' => max(0, $averageSpending - $superHemat), // Potential savings if using super hemat
             ];
         }
 

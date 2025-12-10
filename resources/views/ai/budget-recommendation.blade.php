@@ -19,7 +19,7 @@
         {{-- AVERAGE & CURRENT --}}
         <div class="grid grid-cols-2 text-sm mb-4">
             <div>
-                <p class="text-gray-500">Average Spending (3 months)</p>
+                <p class="text-gray-500">Average Spending (1 month)</p>
                 <p class="font-semibold">
                     Rp {{ number_format($rec['average_spending'], 0, ',', '.') }}
                 </p>
@@ -35,28 +35,59 @@
 
         <hr class="my-4">
 
+        {{-- AI ADVICE --}}
+        @if(isset($rec['advice']))
+        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p class="text-sm text-blue-800">
+                <span class="font-semibold">💡 AI Advice:</span> {{ $rec['advice'] }}
+            </p>
+        </div>
+        @endif
+
         {{-- RECOMMENDED BUDGET --}}
-        <p class="text-gray-500 mb-1">Recommended Budget</p>
-        <p class="text-green-600 font-bold text-2xl mb-5">
-            Rp {{ number_format($rec['recommended_budget'], 0, ',', '.') }}
-        </p>
+        <div class="mb-4">
+            <p class="text-gray-500 mb-1">AI Recommended Budget</p>
+            <p class="text-green-600 font-bold text-2xl mb-2">
+                Rp {{ number_format($rec['recommended_budget'], 0, ',', '.') }}
+            </p>
+            
+            @if(isset($rec['savings_potential']) && $rec['savings_potential'] > 0)
+            <p class="text-sm text-green-600">
+                💰 Potensi penghematan: Rp {{ number_format($rec['savings_potential'], 0, ',', '.') }} per bulan
+            </p>
+            @endif
+        </div>
+
+        {{-- CURRENT MONTH SPENDING --}}
+        @if(isset($rec['current_month_spending']) && $rec['current_month_spending'] > 0)
+        <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+            <p class="text-sm text-gray-600">
+                <span class="font-semibold">Spending bulan ini:</span> 
+                Rp {{ number_format($rec['current_month_spending'], 0, ',', '.') }}
+                @if($rec['overspending'])
+                    <span class="text-red-600 font-semibold ml-2">⚠️ Overspend!</span>
+                @endif
+            </p>
+        </div>
+        @endif
 
         {{-- TITLE --}}
-        <h4 class="text-center font-bold mb-3 text-gray-700">AI Lifestyle Recommendations</h4>
+        <h4 class="text-center font-bold mb-3 text-gray-700">Pilihan Budget Lifestyle</h4>
 
         {{-- LIFESTYLE CARDS --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
 
             {{-- SUPER HEMAT --}}
             <div 
                 class="p-4 rounded-xl bg-green-100 cursor-pointer hover:shadow-md transition budget-card" 
                 onclick="selectBudget('{{ $rec['super_hemat'] }}', this)"
             >
-                <p class="font-bold text-green-700 text-sm mb-1">Super Hemat</p>
-                <p class="text-xl font-semibold">
+                <p class="font-bold text-green-700 text-sm mb-1">💚 Super Hemat</p>
+                <p class="text-lg font-semibold">
                     Rp {{ number_format($rec['super_hemat'], 0, ',', '.') }}
                 </p>
-                <p class="text-xs text-gray-600 mt-1">(-20% dari rata-rata)</p>
+                <p class="text-xs text-gray-600 mt-1">-25% dari spending</p>
+                <p class="text-xs text-green-600 mt-1">Maksimal saving!</p>
             </div>
 
             {{-- HEMAT --}}
@@ -64,11 +95,25 @@
                 class="p-4 rounded-xl bg-blue-100 cursor-pointer hover:shadow-md transition budget-card" 
                 onclick="selectBudget('{{ $rec['hemat'] }}', this)"
             >
-                <p class="font-bold text-blue-700 text-sm mb-1">Hemat</p>
-                <p class="text-xl font-semibold">
+                <p class="font-bold text-blue-700 text-sm mb-1">💙 Hemat</p>
+                <p class="text-lg font-semibold">
                     Rp {{ number_format($rec['hemat'], 0, ',', '.') }}
                 </p>
-                <p class="text-xs text-gray-600 mt-1">(normal)</p>
+                <p class="text-xs text-gray-600 mt-1">-10% dari spending</p>
+                <p class="text-xs text-blue-600 mt-1">Hemat tapi realistis</p>
+            </div>
+
+            {{-- NORMAL --}}
+            <div 
+                class="p-4 rounded-xl bg-gray-100 cursor-pointer hover:shadow-md transition budget-card" 
+                onclick="selectBudget('{{ $rec['normal'] }}', this)"
+            >
+                <p class="font-bold text-gray-700 text-sm mb-1">⚪ Normal</p>
+                <p class="text-lg font-semibold">
+                    Rp {{ number_format($rec['normal'], 0, ',', '.') }}
+                </p>
+                <p class="text-xs text-gray-600 mt-1">Sesuai spending aktual</p>
+                <p class="text-xs text-gray-600 mt-1">Paling realistis</p>
             </div>
 
             {{-- NYANTAI --}}
@@ -76,21 +121,47 @@
                 class="p-4 rounded-xl bg-yellow-100 cursor-pointer hover:shadow-md transition budget-card" 
                 onclick="selectBudget('{{ $rec['nyantai'] }}', this)"
             >
-                <p class="font-bold text-yellow-700 text-sm mb-1">Nyantai</p>
-                <p class="text-xl font-semibold">
+                <p class="font-bold text-yellow-700 text-sm mb-1">💛 Nyantai</p>
+                <p class="text-lg font-semibold">
                     Rp {{ number_format($rec['nyantai'], 0, ',', '.') }}
                 </p>
-                <p class="text-xs text-gray-600 mt-1">(+20% fleksibel)</p>
+                <p class="text-xs text-gray-600 mt-1">+15% buffer</p>
+                <p class="text-xs text-yellow-600 mt-1">Fleksibel & aman</p>
             </div>
 
         </div>
 
-        {{-- WARNING --}}
-        @if($rec['current_budget'] < $rec['average_spending'])
-        <div class="mt-6 p-3 bg-orange-100 border border-orange-300 rounded-lg text-orange-700 text-sm">
-            ⚠️ Warning: Your current budget is lower than your average spending.
+        {{-- STATUS & WARNINGS --}}
+        <div class="mt-6 space-y-3">
+            @if($rec['overspending'])
+            <div class="p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm">
+                🚨 <strong>Overspending Alert!</strong> 
+                Anda sudah overspend Rp {{ number_format($rec['overspend_amount'], 0, ',', '.') }} bulan ini.
+            </div>
+            @endif
+
+            @if($rec['status'] == 'increase')
+            <div class="p-3 bg-orange-100 border border-orange-300 rounded-lg text-orange-700 text-sm">
+                ⚠️ <strong>Budget Terlalu Rendah:</strong> 
+                Budget saat ini lebih rendah dari pola spending Anda.
+            </div>
+            @elseif($rec['status'] == 'decrease')
+            <div class="p-3 bg-blue-100 border border-blue-300 rounded-lg text-blue-700 text-sm">
+                💡 <strong>Budget Bisa Dikurangi:</strong> 
+                Budget saat ini terlalu tinggi dibanding spending aktual.
+            </div>
+            @elseif($rec['status'] == 'sufficient')
+            <div class="p-3 bg-green-100 border border-green-300 rounded-lg text-green-700 text-sm">
+                ✅ <strong>Budget Sudah Tepat:</strong> 
+                Budget Anda sudah sesuai dengan pola spending.
+            </div>
+            @elseif($rec['status'] == 'create')
+            <div class="p-3 bg-purple-100 border border-purple-300 rounded-lg text-purple-700 text-sm">
+                🆕 <strong>Buat Budget Baru:</strong> 
+                Belum ada budget untuk kategori ini. Disarankan membuat budget.
+            </div>
+            @endif
         </div>
-        @endif
 
         {{-- UPDATE FORM --}}
         <form action="{{ route('ai.applyBudget') }}" method="POST" class="mt-6">

@@ -31,7 +31,7 @@ class Setting extends Model
 
     public static function set($key, $value)
     {
-        return self::updateOrCreate(
+        return self::withoutGlobalScope('user')->updateOrCreate(
             ['key' => $key, 'user_id' => auth()->id()],
             ['value' => $value]
         );

@@ -17,12 +17,13 @@
                 </lottie-player>
             </div>
 
-            <div>
+            <div class="flex-1">
                 <div class="font-semibold">Ayu — AI Assistant</div>
                 <div class="text-xs text-gray-500">Klik untuk chat atau minta rekomendasi</div>
             </div>
 
-            <button id="close-assistant" class="ml-auto text-gray-500">✕</button>
+            <button id="new-session" class="text-blue-600 text-xs mr-2 hover:text-blue-800" title="Session Baru">🔄</button>
+            <button id="close-assistant" class="text-gray-500">✕</button>
         </div>
 
         <!-- BODY -->
@@ -136,6 +137,50 @@ function loadChat() {
 
     closeBtn.addEventListener('click', () => chat.classList.add('hidden'));
 
+    // NEW SESSION
+    const newSessionBtn = document.getElementById('new-session');
+    newSessionBtn.addEventListener('click', async () => {
+        if (confirm('Mulai session baru? Chat history akan dihapus.')) {
+            try {
+                const res = await fetch("{{ route('ai.newSession') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || "{{ csrf_token() }}"
+                    }
+                });
+
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    console.error('New session error:', errorText);
+                    appendMessage("assistant", `Gagal memulai session baru: ${res.statusText}`);
+                    return;
+                }
+
+                const contentType = res.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const responseText = await res.text();
+                    console.error('Non-JSON response:', responseText);
+                    appendMessage("assistant", "Server error saat memulai session baru");
+                    return;
+                }
+
+                const data = await res.json();
+                
+                // Clear chat UI
+                messages.innerHTML = '';
+                localStorage.removeItem("ayu_chat_history");
+                
+                // Show success message
+                appendMessage("assistant", data.message || "Session baru dimulai! 🎉");
+                
+            } catch (err) {
+                console.error('New session error:', err);
+                appendMessage("assistant", "Gagal memulai session baru: " + err.message);
+            }
+        }
+    });
+
     // Markdown
     function renderMarkdown(text) {
         return text
@@ -194,19 +239,47 @@ function loadChat() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || "{{ csrf_token() }}"
                 },
                 body: JSON.stringify({ message: text })
             });
 
-            const data = await res.json();
             typing.remove();
 
-            if (data.reply) appendMessage("assistant", data.reply);
-            else appendMessage("assistant", "Maaf, ada masalah: " + data.error);
+            // Check if response is OK
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error('Server error:', errorText);
+                appendMessage("assistant", `Server error (${res.status}): ${res.statusText}`);
+                return;
+            }
+
+            // Check content type
+            const contentType = res.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const responseText = await res.text();
+                console.error('Non-JSON response:', responseText);
+                appendMessage("assistant", "Server mengembalikan response yang tidak valid. Coba refresh halaman.");
+                return;
+            }
+
+            const data = await res.json();
+
+            if (data.reply) {
+                if (Array.isArray(data.reply)) {
+                    data.reply.forEach(r => appendMessage("assistant", r));
+                } else {
+                    appendMessage("assistant", data.reply);
+                }
+            } else if (data.error) {
+                appendMessage("assistant", "Maaf, ada masalah: " + data.error);
+            } else {
+                appendMessage("assistant", "Response tidak valid dari server");
+            }
 
         } catch (err) {
             typing.remove();
+            console.error('Chat error:', err);
             appendMessage("assistant", "Error koneksi: " + err.message);
         }
     });
