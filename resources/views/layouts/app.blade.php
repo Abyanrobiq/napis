@@ -140,57 +140,67 @@
         </div>
 
         <nav class="flex-1 px-4">
-            <a href="{{ route('dashboard') }}"
-               class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
-               {{ request()->routeIs('dashboard') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
-                <span class="font-medium">Home</span>
-            </a>
 
-            <a href="{{ route('budgets.index') }}"
-               class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
-               {{ request()->routeIs('budgets.*') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
-                <span class="font-medium">Budget</span>
-            </a>
+    <a href="{{ route('dashboard') }}"
+       class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
+       {{ request()->routeIs('dashboard') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
+        <img src="{{ asset('icons/home.png') }}" class="w-5 h-5">
+        <span class="font-medium">Home</span>
+    </a>
 
-            <a href="{{ route('transactions.index') }}"
-               class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
-               {{ request()->routeIs('transactions.*') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
-                <span class="font-medium">Transaction</span>
-            </a>
+    <a href="{{ route('budgets.index') }}"
+       class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
+       {{ request()->routeIs('budgets.*') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
+        <img src="{{ asset('icons/budget.png') }}" class="w-5 h-5">
+        <span class="font-medium">Budget</span>
+    </a>
 
-            <a href="{{ route('savings.index') }}"
-               class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
-               {{ request()->routeIs('savings.*') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
-                <span class="font-medium">Savings</span>
-            </a>
+    <a href="{{ route('transactions.index') }}"
+       class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
+       {{ request()->routeIs('transactions.*') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
+        <img src="{{ asset('icons/money.png') }}" class="w-5 h-5">
+        <span class="font-medium">Transaction</span>
+    </a>
 
-            <a href="{{ route('reports.index') }}"
-               class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
-               {{ request()->routeIs('reports.*') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
-                <span class="font-medium">Reports</span>
-            </a>
+    <a href="{{ route('savings.index') }}"
+       class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
+       {{ request()->routeIs('savings.*') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
+        <img src="{{ asset('icons/piggy.png') }}" class="w-5 h-5">
+        <span class="font-medium">Savings</span>
+    </a>
 
-            <div class="border-t my-3"></div>
-            <p class="px-4 text-xs font-semibold text-gray-500 mb-2">AI FEATURES</p>
+    <a href="{{ route('reports.index') }}"
+       class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
+       {{ request()->routeIs('reports.*') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
+        <img src="{{ asset('icons/report.png') }}" class="w-5 h-5">
+        <span class="font-medium">Reports</span>
+    </a>
+    
+    <div class="border-t my-3"></div>
+    <p class="px-4 text-xs font-semibold text-gray-500 mb-2">AI FEATURES</p>
 
-            <a href="{{ route('ai.reminders') }}"
-               class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
-               {{ request()->routeIs('ai.reminders') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
-                <span class="font-medium">Smart Reminders</span>
-            </a>
+    <a href="{{ route('ai.reminders') }}"
+       class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
+       {{ request()->routeIs('ai.reminders') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
+        <img src="{{ asset('icons/bell.png') }}" class="w-5 h-5">
+        <span class="font-medium">Smart Reminders</span>
+    </a>
 
-            <a href="{{ route('ai.analysis') }}"
-               class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
-               {{ request()->routeIs('ai.analysis') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
-                <span class="font-medium">AI Analysis</span>
-            </a>
+    <a href="{{ route('ai.analysis') }}"
+       class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
+       {{ request()->routeIs('ai.analysis') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
+        <img src="{{ asset('icons/ai.png') }}" class="w-5 h-5">
+        <span class="font-medium">AI Analysis</span>
+    </a>
 
-            <a href="{{ route('ai.budget-recommendation') }}"
-               class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
-               {{ request()->routeIs('ai.budget-recommendation') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
-                <span class="font-medium">AI Recommendations</span>
-            </a>
-        </nav>
+    <a href="{{ route('ai.budget-recommendation') }}"
+       class="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 text-sm
+       {{ request()->routeIs('ai.budget-recommendation') ? 'sidebar-active' : 'text-gray-700 hover:bg-gray-100' }}">
+        <img src="{{ asset('icons/recommend.png') }}" class="w-5 h-5">
+        <span class="font-medium">AI Recommendations</span>
+    </a>
+</nav>
+
 
         <div class="p-4 border-t">
             <div class="flex justify-between items-center text-sm">
@@ -200,6 +210,15 @@
                 </span>
             </div>
         </div>
+        <form method="POST" action="{{ route('logout') }}" class="px-4 mb-4">
+    @csrf
+    <button 
+        type="submit"
+        class="w-full bg-red-500 text-white text-sm py-2 rounded-lg hover:bg-red-600">
+        Logout
+    </button>
+</form>
+
     </aside>
 
 
