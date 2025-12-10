@@ -6,7 +6,13 @@
 <div class="space-y-6">
     <!-- Welcome Header -->
     <div>
-        <h1 class="text-2xl font-bold text-gray-800">Welcome Back, {{ Auth::user()->name }}!</h1>
+        <h1 class="text-2xl font-bold text-gray-800">
+            @if(isset($isNewUser) && $isNewUser)
+                Welcome to NAPISS, {{ Auth::user()->name }}!
+            @else
+                Welcome Back, {{ Auth::user()->name }}!
+            @endif
+        </h1>
     </div>
 
     <!-- Balance Cards -->
@@ -147,20 +153,33 @@
         </div>
     </div>
 
-    <!-- Set Balance Modal Trigger (Hidden by default) -->
-    @if(\App\Models\Setting::get('initial_balance') === null)
+    <!-- Set Balance Modal for New Users -->
+    @if(isset($isNewUser) && $isNewUser)
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
-            <h2 class="text-2xl font-bold mb-4">Set Your Initial Balance</h2>
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-2xl">💰</span>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Welcome to NAPISS!</h2>
+                <p class="text-gray-600 text-sm">Let's start by setting your initial balance to track your finances properly.</p>
+            </div>
+            
             <form action="{{ route('set.balance') }}" method="POST">
                 @csrf
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-2">Initial Balance</label>
-                    <input type="number" name="balance" placeholder="1000000" 
-                        class="w-full px-4 py-3 border rounded-lg" step="0.01" required>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-2 text-gray-700">Initial Balance</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-3 text-gray-500">Rp</span>
+                        <input type="number" name="balance" placeholder="1000000" 
+                            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            step="1" min="0" required>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Enter your current cash/bank balance</p>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold">
-                    Save Balance
+                
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold transition-colors">
+                    Start Managing My Finances
                 </button>
             </form>
         </div>

@@ -320,12 +320,20 @@
                 <span class="text-gray-600">CASH</span>
                 <span class="font-semibold">
                     @php
-                        $balance = \App\Models\Setting::get('initial_balance', 0);
-                        $totalIncome = \App\Models\Transaction::where('type', 'income')->sum('amount');
-                        $totalExpense = \App\Models\Transaction::where('type', 'expense')->sum('amount');
-                        $currentBalance = $balance + $totalIncome - $totalExpense;
+                        $balance = \App\Models\Setting::get('initial_balance', null);
+                        if (is_null($balance)) {
+                            $currentBalance = 0;
+                        } else {
+                            $totalIncome = \App\Models\Transaction::where('type', 'income')->sum('amount');
+                            $totalExpense = \App\Models\Transaction::where('type', 'expense')->sum('amount');
+                            $currentBalance = $balance + $totalIncome - $totalExpense;
+                        }
                     @endphp
-                    Rp {{ number_format($currentBalance, 0, ',', '.') }}
+                    @if(is_null($balance))
+                        <span class="text-gray-400 text-xs">Not Set</span>
+                    @else
+                        Rp {{ number_format($currentBalance, 0, ',', '.') }}
+                    @endif
                 </span>
             </div>
         </div>

@@ -25,13 +25,8 @@ class Setting extends Model
 
     public static function get($key, $default = null)
     {
-        // Try to get user-specific setting first
+        // Only get user-specific setting, no fallback to other users
         $setting = self::where('key', $key)->where('user_id', auth()->id())->first();
-        
-        // If not found and user is authenticated, try to get any setting with that key (for backward compatibility)
-        if (!$setting && auth()->check()) {
-            $setting = self::withoutGlobalScope('user')->where('key', $key)->first();
-        }
         
         return $setting ? $setting->value : $default;
     }

@@ -14,6 +14,24 @@ class DashboardController extends Controller
     public function index()
     {
         /* ============================
+         * 0) Cek apakah user baru (belum set initial balance)
+         * ============================ */
+        $initialBalance = Setting::get('initial_balance', null);
+        $isNewUser = is_null($initialBalance);
+        
+        // Jika user baru, tampilkan form set balance
+        if ($isNewUser) {
+            return view('dashboard', [
+                'isNewUser' => true,
+                'currentBalance' => 0,
+                'recentTransactions' => collect([]),
+                'budgets' => collect([]),
+                'savings' => collect([]),
+                'totalSavings' => 0
+            ]);
+        }
+
+        /* ============================
          * 1) Ambil data budget
          * ============================ */
         $budgets = Budget::with('category')->get();
@@ -52,7 +70,7 @@ class DashboardController extends Controller
         /* ============================
          * 4) Hitung keuangan
          * ============================ */
-        $balance        = Setting::get('initial_balance', 0);
+        $balance        = (float) $initialBalance;
         $totalIncome    = Transaction::where('type', 'income')->sum('amount');
         $totalExpense   = Transaction::where('type', 'expense')->sum('amount');
         $currentBalance = $balance + $totalIncome - $totalExpense;
@@ -70,7 +88,7 @@ class DashboardController extends Controller
             'budgets',
             'savings',
             'totalSavings'
-        ));
+        ) + ['isNewUser' => false]);
     }
 
     public function setInitialBalance(Request $request)
