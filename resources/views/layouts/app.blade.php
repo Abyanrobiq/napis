@@ -106,7 +106,10 @@
 {{-- ===================================================== --}}
 <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 
-@if(session('overspend'))
+@if(session('overspend') && is_array(session('overspend')))
+@php
+    $overspendData = session('overspend');
+@endphp
 <div id="overspendPopup"
     class="fixed bottom-44 right-6 bg-white/90 backdrop-blur-xl shadow-xl border border-red-300
            px-4 py-4 rounded-xl flex items-center gap-3 z-[99998] animate-fade-in w-72">
@@ -120,15 +123,17 @@
         <p class="text-red-700 font-bold text-sm">Overspending Detected!</p>
 
         <p class="text-xs text-red-600 leading-tight mt-1">
-            Kategori <strong>{{ session('overspend')['category'] }}</strong>
+            Kategori <strong>{{ $overspendData['category'] ?? 'Unknown' }}</strong>
             overspend sebesar
-            <strong>Rp {{ number_format(session('overspend')['overspent'],0,',','.') }}</strong>
+            <strong>Rp {{ number_format($overspendData['overspent'] ?? 0, 0, ',', '.') }}</strong>
         </p>
 
-        <a href="{{ route('ai.budget-recommendation') }}?category_id={{ session('overspend')['category_id'] }}"
-   class="mt-2 inline-block bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
-   Cek Rekomendasi AI 💡
-</a>
+        @if(isset($overspendData['category_id']))
+        <a href="{{ route('ai.budget-recommendation') }}?category_id={{ $overspendData['category_id'] }}"
+           class="mt-2 inline-block bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
+           Cek Rekomendasi AI 💡
+        </a>
+        @endif
 
     </div>
 

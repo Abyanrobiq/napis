@@ -63,8 +63,11 @@ if ($request->type === 'expense') {
             $overspendAmount = $currentSpent - $budget->amount;
 
             session()->flash('overspend', [
+                'category_id' => $budget->category_id,
                 'category' => $budget->category->name,
-                'amount' => $overspendAmount
+                'spent' => $currentSpent,
+                'budget' => $budget->amount,
+                'overspent' => $overspendAmount
             ]);
         }
     }
