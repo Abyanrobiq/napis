@@ -79,8 +79,15 @@ class DashboardController extends Controller
             'balance' => 'required|numeric|min:0'
         ]);
 
-        Setting::set('initial_balance', $request->balance);
-
-        return redirect()->route('dashboard')->with('success', 'Initial balance has been set successfully!');
+        try {
+            Setting::set('initial_balance', $request->balance);
+            return redirect()->route('dashboard')->with('success', 'Initial balance has been set successfully!');
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Handle unique constraint violation
+            if ($e->getCode() == 23000) {
+                return redirect()->route('dashboard')->with('error', 'There was an issue updating the balance. Please try again or contact support.');
+            }
+            throw $e;
+        }
     }
 }

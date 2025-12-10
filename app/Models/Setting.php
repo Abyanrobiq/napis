@@ -25,15 +25,38 @@ class Setting extends Model
 
     public static function get($key, $default = null)
     {
-        $setting = self::where('key', $key)->first();
+        // Try to get user-specific setting first
+        $setting = self::where('key', $key)->where('user_id', auth()->id())->first();
+        
+        // If not found and user is authenticated, try to get any setting with that key (for backward compatibility)
+        if (!$setting && auth()->check()) {
+            $setting = self::withoutGlobalScope('user')->where('key', $key)->first();
+        }
+        
         return $setting ? $setting->value : $default;
     }
 
     public static function set($key, $value)
     {
-        return self::withoutGlobalScope('user')->updateOrCreate(
-            ['key' => $key, 'user_id' => auth()->id()],
-            ['value' => $value]
-        );
+        try {
+            return self::withoutGlobalScope('user')->updateOrCreate(
+                ['key' => $key, 'user_id' => auth()->id()],
+                ['value' => $value]
+            );
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Handle unique constraint violation for old schema
+            if ($e->getCode() == 23000) {
+                // Try to update existing record first
+                $existing = self::withoutGlobalScope('user')->where('key', $key)->first();
+                if ($existing) {
+                    $existing->update([
+                        'value' => $value,
+                        'user_id' => auth()->id()
+                    ]);
+                    return $existing;
+                }
+            }
+            throw $e;
+        }
     }
 }
