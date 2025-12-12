@@ -34,5 +34,9 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'grok' => [
+    'api_key' => env('GROQ_API_KEY'),
+    'model'   => env('AI_MODEL', 'llama3-8b-8192'),
+],
 
 ];
